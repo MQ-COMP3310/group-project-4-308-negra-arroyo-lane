@@ -106,6 +106,18 @@ def get_scores():
     usernames_and_scores = sorted(zip(usernames, scores), key=lambda x: x[1], reverse=True)
     return usernames_and_scores
 
+def save_results(username, result):
+    with open("data/user-" + username + "-results.txt", "a") as file:
+        file.writelines(str(result) + "\n")
+
+def show_results(username):
+    results = []
+    with open("data/user-" + username + "-results.txt", "r") as file:
+        lines = file.read().splitlines()
+    for line in lines:
+        results.append(line)
+    return results
+
 
 # HOMEPAGE
 @app.route('/', methods=["GET", "POST"])
@@ -125,6 +137,7 @@ def index():
 def user(username):
 
     # Create a User Specific File for Score Keeping etc.
+    open("data/user-" + username + "-results.txt", 'a').close()
     open("data/user-" + username + "-score.txt", 'a').close()
     clear_score(username)
     open("data/user-" + username + "-guesses.txt", 'a').close()
@@ -134,7 +147,7 @@ def user(username):
         return redirect(url_for('game', username=username))
 
     return render_template("welcome.html",
-                            username=username)
+                            username=username, show_results=show_results(username))
 
 
 # GAME PAGE
@@ -166,6 +179,7 @@ def game(username):
                 # If right answer on LAST riddle: add score, submit score to highscore file and redirect to congrats page
                 write_to_file("data/user-" + username + "-score.txt", str(add_to_score()) + "\n")
                 final_score(username)
+                save_results(username, end_score(username))
                 return redirect(url_for('congrats', username=username, score=end_score(username)))
 
         else:
