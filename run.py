@@ -1,7 +1,8 @@
 import os
 import sys
+import re
 from importlib import reload
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, session
 
 # Needed for encoding to utf8
 reload(sys)
@@ -225,6 +226,29 @@ def highscores():
 
     return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
 
+# Feature 1 (Task 9.1) - Background Colour Customisation
+
+# Allowlist per security principles
+HEX_COLOUR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{3}$')
+DEFAULT_COLOUR = '#ffffff'
+
+# Ensures user-input complies with maximum length of 7, and contains no illegal characters, else it returns defined default colour
+def sanitise_colour(value):
+    if value and len(value)<= 7 and HEX_COLOUR_RE.match(value): 
+        return value
+    return DEFAULT_COLOUR
+
+# Injects validated colour input to pages automatically
+@app.context_processor
+def inject_bg_colour():
+    return {'bg_colour': sanitise_colour(session.get('bg_colour', DEFAULT_COLOUR))}
+
+# Accepts colour submission, validates and stores, ensuring persistency during session
+@app.route('/settings/set_colour', methods =["POST"])
+def set_colour():
+    session['bg_colour'] = sanitise_colour(request.form.get('bg_colour', DEFAULT_COLOUR))
+    return redirect(request.referrer or url_for('index'))
+
 
 if __name__ == '__main__':
     ip = "127.0.0.1"
@@ -232,3 +256,4 @@ if __name__ == '__main__':
     app.run(host=ip,
             port=port,
             debug=True)
+
