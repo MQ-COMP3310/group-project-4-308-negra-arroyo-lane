@@ -1,9 +1,19 @@
 {% extends 'base.html' %} {% block content %}
-<div class="container base-content welcome-page">
+<div class="container base-content welcome-page" style="padding-top: 100px;">
     <div class="row">
         <div class="col text-center">
             <h1>Welcome to Riddle Me This, {{ username.title() }}</h1>
             <hr>
+            
+            <!-- User Info & Actions -->
+            <div class="alert alert-info">
+                <small>
+                    Logged in as: <strong>{{ username }}</strong> 
+                    | <a href="{{ url_for('highscores') }}" class="alert-link">
+                    <i class="fas fa-history"></i> View Score History</a>
+                </small>
+            </div>
+
             <p>This is a straight forward riddle game. The rules are as follows:</p>
             <ul>
                 <li>There are 10 Riddles to answer.</li>
@@ -12,12 +22,27 @@
                 <li>One point gets deducted per wrong guess.</li>
                 <li>How far can you get?</li>
             </ul>
+
+            <div class="alert alert-warning">
+                <i class="fas fa-shield-alt"></i> <strong>Security:</strong> 
+                Your scores are protected and cannot be edited or deleted once recorded.
+            </div>
+
             <br>
-            <form method="POST">
-                <p>Press the button below the start a new game.</p>
+            <form method="POST" style="display: inline;">
+                <p>Press the button below to start a new game.</p>
                 <button class="btn btn-dark hvr-round-corners">PLAY</button>
+            </form>
+            
+            <br><br>
+            
+            <form method="POST" action="{{ url_for('logout') }}" style="display: inline;">
+                <button type="submit" class="btn btn-danger hvr-round-corners">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </form>
         </div>
     </div>
 </div>
 {% endblock %}
+

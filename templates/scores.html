@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container" style="padding-top: 100px; padding-bottom: 50px;">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+          <h2 class="mb-0"><i class="fas fa-history"></i> Your Score History</h2>
+        </div>
+        
+        <div class="card-body">
+          {% if username %}
+            <p class="text-muted mb-4">
+              Viewing scores for: <strong>{{ username }}</strong>
+              <br>
+              <small>Scores are read-only and cannot be modified.</small>
+            </p>
+          {% endif %}
+
+          {% if scores %}
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for score in scores %}
+                    <tr>
+                      <td><strong>{{ score.score_id + 1 }}</strong></td>
+                      <td><strong>{{ score.score }} points</strong></td>
+                      <td>
+                        <span class="badge badge-success">Recorded</span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="alert alert-info mt-4">
+              <i class="fas fa-shield-alt"></i> <strong>Security Notice:</strong> 
+              Your scores are protected and can only be viewed by you (or administrators). 
+              They cannot be edited or deleted once recorded.
+            </div>
+          {% else %}
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> No scores recorded yet. 
+              <a href="{{ url_for('index') }}">Play a game</a> to get started!
+            </div>
+          {% endif %}
+
+          <div class="mt-4">
+            <a href="{{ url_for('user', username=username) }}" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Back to Profile
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+              <i class="fas fa-dice"></i> Play Another Game
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
