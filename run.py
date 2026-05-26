@@ -1,13 +1,19 @@
 import os
 import sys
 from importlib import reload
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, session, abort
+from functools import wraps
+from admin import admin_bp
+
 
 # Needed for encoding to utf8
 reload(sys)
 
 app = Flask(__name__)
 app.secret_key = 'some_secret'
+app.config['ADMIN_USERNAME'] = 'admin'
+app.config['ADMIN_PASSWORD'] = 'admin'
+app.register_blueprint(admin_bp)
 data = []
 
 

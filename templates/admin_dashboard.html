@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 100px;">
+    <h1>Admin Dashboard</h1>
+    <p class="lead">Manage all game data from one place.</p>
+
+    <div class="list-group mt-4">
+        <a href="{{ url_for('admin.admin_highscores') }}" class="list-group-item list-group-item-action">
+             Manage Highscores
+        </a>
+
+        <a href="{{ url_for('admin.admin_users') }}" class="list-group-item list-group-item-action">
+            Manage Users & Guesses
+        </a>
+
+        <a href="{{ url_for('admin.admin_riddles') }}" class="list-group-item list-group-item-action">
+            Manage Riddles & Answers
+        </a>
+    </div>
+</div>
+{% endblock %}

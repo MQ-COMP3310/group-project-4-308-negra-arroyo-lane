@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 100px;">
+    <h1>Manage Riddles</h1>
+    <p class="lead">Review current riddles and their answers.</p>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Entry</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for riddle, answer in riddles %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.modify_riddle', riddle_id=loop.index0) }}" class="row g-2 align-items-center">
+                            <div class="col-12 col-md-5">
+                                <input type="text" name="riddle" value="{{ riddle }}" class="form-control" required>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <input type="text" name="answer" value="{{ answer }}" class="form-control" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <button type="submit" name="action" value="edit" class="btn btn-sm btn-primary">Save</button>
+                                <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger">Delete</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2">No riddles available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2>Add new riddle</h2>
+            <form method="post" action="{{ url_for('admin.add_riddle') }}">
+                <div class="mb-3">
+                    <label class="form-label">Riddle</label>
+                    <input type="text" name="new_riddle" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Answer</label>
+                    <input type="text" name="new_answer" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success">Add Riddle</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
