@@ -239,6 +239,13 @@ def highscores():
 
     return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
 
+@app.route('/<username>/history')
+def history(username):
+    
+    results = show_results(username)
+
+    return render_template("history.html", page_title="History", username=username, results=results)
+
 
 if __name__ == '__main__':
     ip = "127.0.0.1"
@@ -246,3 +253,5 @@ if __name__ == '__main__':
     app.run(host=ip,
             port=port,
             debug=True)
+    
+
