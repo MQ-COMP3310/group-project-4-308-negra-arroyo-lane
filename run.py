@@ -228,11 +228,11 @@ def highscores():
 
 # Feature 1 (Task 9.1) - Background Colour Customisation
 
-# Allowlist per security principles
+# Input Sanitisation : Allowlist per security principles
 HEX_COLOUR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{3}$')
 DEFAULT_COLOUR = '#ffffff'
 
-# Ensures user-input complies with maximum length of 7, and contains no illegal characters, else it returns defined default colour
+# Input Sanitisation : Ensures user-input complies with maximum length of 7, and contains no illegal characters, else it returns defined default colour
 def sanitise_colour(value):
     if value and len(value)<= 7 and HEX_COLOUR_RE.match(value): 
         return value
@@ -243,7 +243,7 @@ def sanitise_colour(value):
 def inject_bg_colour():
     return {'bg_colour': sanitise_colour(session.get('bg_colour', DEFAULT_COLOUR))}
 
-# Accepts colour submission, validates and stores, ensuring persistency during session
+# Principle Least Privilege : Accepts colour submission, validates and stores, ensuring persistency during session. Only a validated value is ever stored
 @app.route('/settings/set_colour', methods =["POST"])
 def set_colour():
     session['bg_colour'] = sanitise_colour(request.form.get('bg_colour', DEFAULT_COLOUR))
