@@ -1,0 +1,27 @@
+{% extends 'base.html' %} {% block content %}
+<div class="container base-content">
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>History</h1>
+                <!-- Jinja for loop to iterate through the list -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in results[::-1] %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
