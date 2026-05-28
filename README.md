@@ -19,48 +19,8 @@ The user is required to register or login to start the game. Once authenticated,
 
 ## Security Features Implemented
 
-### 1. User Authentication ✅
-- Registration with password hashing (PBKDF2:SHA256 with salt)
-- Login with password verification
-- Session-based authentication
-- Logout with session clearing
 
-### 2. Authorization & Access Control ✅
-- **ACR-01**: Use authenticated session user for all access decisions
-- **ACR-02**: Users can only view their own score history
-- **ACR-03**: Users cannot edit or delete scores (403 Forbidden)
-- **ACR-04**: Admin-only routes documented for future use
-- **ACR-05**: Scores calculated by server, not accepted from browser
 
-### 3. Input Validation ✅
-- Username format validation: `^[a-z0-9_]{3,30}$`
-- Password minimum length: 8 characters
-- Score value validation: integers only
-- Path traversal protection
-
-### 4. Secure Session Management ✅
-- HTTPOnly cookies (prevent JavaScript access)
-- SameSite=Lax flag (CSRF protection)
-- Secure flag (for HTTPS in production)
-- Session user required for all protected routes
-
-### 5. Audit Logging ✅
-- All authentication events logged (login, register, logout)
-- All score modification attempts logged with "forbidden" result
-- Timestamps, actor, action, and result recorded
-- JSON format for easy analysis (`data/audit.log`)
-
-### 6. Secure Error Handling ✅
-- HTTP 400 for invalid input
-- HTTP 403 for unauthorized access
-- HTTP 404 for not found
-- No stack traces or internal file paths exposed
-
-### 7. Server-Side Score Authority ✅
-- Scores calculated entirely by server-side game logic
-- Browser cannot submit score values
-- Only `record_completed_score()` can record scores
-- Score integrity guaranteed
 
 ## Setup
 
