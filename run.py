@@ -1,3 +1,4 @@
+#run.py
 import os
 import sys
 import json
@@ -11,12 +12,18 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from score_feature import score_bp, record_completed_score
+from admin import admin_bp
+from flask_wtf.csrf import CSRFProtect
+
 
 # Needed for encoding to utf8
 reload(sys)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+csrf = CSRFProtect(app)
 app.register_blueprint(score_bp)
+app.register_blueprint(admin_bp)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
@@ -26,6 +33,10 @@ data = []
 # Data directory for user management
 USERS_FILE = Path("data/users.json")
 AUDIT_LOG_FILE = Path("data/audit.log")
+USER_DATA_PREFIX = "data/user-"
+USER_GUESSES_SUFFIX = "-guesses.txt"
+USER_SCORE_SUFFIX = "-score.txt"
+INDEX_HTML= "index.html"
 
 
 # ============================================================
@@ -165,38 +176,38 @@ def riddle_answers():
 
 # Clear functions for wrong answers and score
 def clear_guesses(username):
-    with open("data/user-" + username + "-guesses.txt", "w"):
+    with open(USER_DATA_PREFIX + username + USER_GUESSES_SUFFIX, "w"):
         return
 
 def clear_score(username):
-    with open("data/user-" + username + "-score.txt", "w"):
+    with open(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, "w"):
         return
 
 
 # Wrong answer handling
 def store_all_attempts(username):
     attempts = []
-    with open("data/user-" + username + "-guesses.txt", "r") as incorrect_attempts:
+    with open(USER_DATA_PREFIX + username + USER_GUESSES_SUFFIX, "r") as incorrect_attempts:
         attempts = incorrect_attempts.readlines()
     return attempts
 
-def num_of_attempts():
+def num_of_attempts(username):
     attempts = store_all_attempts(username)
     return len(attempts)
 
-def attempts_remaining():
-    remaining_attempts = 3 - num_of_attempts()
+def attempts_remaining(username):
+    remaining_attempts = 3 - num_of_attempts(username)
     return remaining_attempts
 
 
 # Score gets lower the more attempts used
-def add_to_score():
-    round_score = 4 - num_of_attempts()
+def add_to_score(username):
+    round_score = 4 - num_of_attempts(username)
     return round_score
 
 #Adds all the scores from all riddles to make final score
 def end_score(username):
-    with open("data/user-" + username + "-score.txt", "r") as numbers_file:
+    with open(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, "r") as numbers_file:
         total = 0
         for line in numbers_file:
             try:
@@ -241,6 +252,62 @@ def get_scores():
     return usernames_and_scores
 
 
+def handle_registration(username, password, users):
+    """Handle user registration flow."""
+    if not validate_password(password):
+        return render_template(INDEX_HTML, page_title="Home", 
+                             error="Password must be at least 8 characters")
+    
+    if username in users:
+        return render_template(INDEX_HTML, page_title="Home", 
+                             error="Username already exists")
+    
+    # Secure coding principle: secure password storage (salted hash)
+    password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+    users[username] = {
+        "password_hash": password_hash,
+        "role": "user",
+        "created_at": datetime.now().isoformat()
+    }
+    save_users(users)
+    
+    # Log user creation (audit)
+    audit_log(username, "register", None, "success")
+    
+    # Auto-login after registration
+    session['username'] = username
+    session['role'] = 'user'
+    return redirect(url_for('user', username=username))
+
+
+def handle_login(username, password, users):
+    """Handle user login flow."""
+    if username not in users:
+        return render_template(INDEX_HTML, page_title="Home", 
+                             error="Invalid credentials")
+    
+    user = users[username]
+    
+    # Secure coding principle: password verification
+    if not check_password_hash(user['password_hash'], password):
+        audit_log(username, "login_failed", None, "invalid_password")
+        return render_template(INDEX_HTML, page_title="Home", 
+                             error="Invalid credentials")
+    
+    # Authentication successful
+    session['username'] = username
+    session['role'] = user.get('role', 'user')
+    audit_log(username, "login", None, "success")
+
+    if session["role"] == "admin":
+        return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for('user', username=username))
+
+
+
+
+
+
 # HOMEPAGE
 @app.route('/', methods=["GET", "POST"])
 def index():
@@ -251,58 +318,16 @@ def index():
         
         # Input validation
         if not validate_username_format(username):
-            return render_template("index.html", page_title="Home", error="Invalid username format")
+            return render_template(INDEX_HTML, page_title="Home", error="Invalid username format")
         
         users = load_users()
         
         if action == 'register':
-            # Registration flow
-            if not validate_password(password):
-                return render_template("index.html", page_title="Home", 
-                                     error="Password must be at least 8 characters")
-            
-            if username in users:
-                return render_template("index.html", page_title="Home", 
-                                     error="Username already exists")
-            
-            # Secure coding principle: secure password storage (salted hash)
-            password_hash = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
-            users[username] = {
-                "password_hash": password_hash,
-                "role": "user",
-                "created_at": datetime.now().isoformat()
-            }
-            save_users(users)
-            
-            # Log user creation (audit)
-            audit_log(username, "register", None, "success")
-            
-            # Auto-login after registration
-            session['username'] = username
-            session['role'] = 'user'
-            return redirect(url_for('user', username=username))
+            return handle_registration(username, password, users)
         
-        else:  # login action
-            if username not in users:
-                return render_template("index.html", page_title="Home", 
-                                     error="Invalid credentials")
-            
-            user = users[username]
-            
-            # Secure coding principle: password verification
-            if not check_password_hash(user['password_hash'], password):
-                audit_log(username, "login_failed", None, "invalid_password")
-                return render_template("index.html", page_title="Home", 
-                                     error="Invalid credentials")
-            
-            # Authentication successful
-            session['username'] = username
-            session['role'] = user.get('role', 'user')
-            audit_log(username, "login", None, "success")
-            
-            return redirect(url_for('user', username=username))
+        return handle_login(username, password, users)
     
-    return render_template("index.html", page_title="Home")
+    return render_template(INDEX_HTML, page_title="Home")
 
 
 # LOGOUT
@@ -327,9 +352,9 @@ def logout():
 def user(username):
 
     # Create a User Specific File for Score Keeping etc.
-    open("data/user-" + username + "-score.txt", 'a').close()
+    open(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, 'a').close()
     clear_score(username)
-    open("data/user-" + username + "-guesses.txt", 'a').close()
+    open(USER_DATA_PREFIX + username + USER_GUESSES_SUFFIX, 'a').close()
     clear_guesses(username)
 
     if request.method == "POST":
@@ -344,37 +369,33 @@ def user(username):
 @login_required
 @owner_or_admin
 def game(username):
-
-    remaining_attempts = 3
     riddles = riddle()
     riddle_index = 0
     answers = riddle_answers()
-    score = 0
 
     if request.method == "POST":
 
         riddle_index = int(request.form["riddle_index"])
         user_response = request.form["answer"].title()
 
-        write_to_file("data/user-" + username + "-guesses.txt", user_response + "\n")
+        write_to_file(USER_DATA_PREFIX + username + USER_GUESSES_SUFFIX, user_response + "\n")
 
         # Compare the user's answer to the correct answer of the riddle
         if answers[riddle_index] == user_response:
             # Correct answer
             if riddle_index < 9:
                 # If riddle number is less than 10 & answer is correct: add score, clear wrong answers file and go to next riddle
-                write_to_file("data/user-" + username + "-score.txt", str(add_to_score()) + "\n")
+                write_to_file(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, str(add_to_score(username)) + "\n")
                 clear_guesses(username)
                 riddle_index += 1
             else:
                 # If right answer on LAST riddle: add score, submit score to highscore file and redirect to congrats page
-                write_to_file("data/user-" + username + "-score.txt", str(add_to_score()) + "\n")
+                write_to_file(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, str(add_to_score(username)) + "\n")
                 final_score(username)
                 return redirect(url_for('congrats', username=username, score=end_score(username)))
-
         else:
             # Incorrect answer
-            if attempts_remaining() > 0:
+            if attempts_remaining(username) > 0:
                 # if answer was wrong and more than 0 attempts remaining, reload current riddle
                 riddle_index = riddle_index
             else:
@@ -383,7 +404,7 @@ def game(username):
 
     return render_template("game.html",
                             username=username, riddle_index=riddle_index, riddles=riddles,
-                            answers=answers, attempts=store_all_attempts(username), remaining_attempts=attempts_remaining(), score=end_score(username))
+                            answers=answers, attempts=store_all_attempts(username), remaining_attempts=attempts_remaining(username), score=end_score(username))
 
 
 # GAMEOVER PAGE
@@ -394,12 +415,6 @@ def gameover(username):
 
     clear_guesses(username)
     clear_score(username)
-
-    rem_attempts = 3
-    riddles = riddle()
-    riddle_index = 0
-    answers = riddle_answers()
-    score = 0
 
     if request.method =="POST":
 
@@ -424,9 +439,8 @@ def congrats(username):
     return render_template("congratulations.html",
                             username=username, score=end_score(username))
 
-
 # HIGHSCORE PAGE
-@app.route('/highscores')
+@app.route('/highscores', methods=["GET"])
 def highscores():
 
     usernames_and_scores = get_scores()
