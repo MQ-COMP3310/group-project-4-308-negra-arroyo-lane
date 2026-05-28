@@ -1,21 +1,61 @@
 import os
-from flask import Blueprint, render_template, redirect, request, url_for, session, abort, flash, current_app
+from flask import Blueprint, render_template, redirect, request, url_for, session, abort, flash
 from functools import wraps
+import json
+from pathlib import Path
+from werkzeug.security import check_password_hash
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
+ADMIN_LOGIN = "admin.admin_login"
+ADMIN_RIDDLES = "admin.admin_riddles"
+USERS_FILE = Path("data/users.json")
+
+@admin_bp.before_request
+def block_non_admin_access():
+    """
+    Blocks normal users from accessing any admin route.
+    Allows unauthenticated users to reach only /admin/login.
+    ACR-04: Score modification routes check role == 'admin'.
+    Only admins can modify scores through dedicated admin routes.
+    """
+
+    # Allow the admin login page only if not already logged in as normal user
+    if request.endpoint == ADMIN_LOGIN:
+        if "username" in session and session.get("role") != "admin":
+            abort(403)
+        return
+
+    # Every other /admin route requires admin role
+    if session.get("role") != "admin":
+        abort(403)
 
 def load_highscores():
     highscores = []
     try:
         with open("data/-highscores.txt", "r") as file:
             lines = file.read().splitlines()
-        for i in range(0, len(lines), 2):
-            username = lines[i]
-            score = int(lines[i + 1])
-            highscores.append({"username": username, "score": score})
     except FileNotFoundError:
         return []
+
+    for i in range(0, len(lines), 2):
+        if i + 1 >= len(lines):
+            continue
+
+        username = lines[i].strip()
+        raw_score = lines[i + 1].strip()
+
+        try:
+            score = int(raw_score)
+        except ValueError:
+            # Invalid/tampered score entry. Skip instead of crashing.
+            continue
+
+        highscores.append({
+            "username": username,
+            "score": score
+        })
+
     return highscores
 
 
@@ -83,8 +123,12 @@ def save_riddles_answers(riddles, answers):
 def admin_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
+        if "username" not in session:
+            abort(403)
+
         if session.get("role") != "admin":
-            return redirect(url_for("admin.admin_login"))
+            abort(403)
+
         return f(*args, **kwargs)
     return wrapper
 
@@ -95,32 +139,46 @@ def admin_login():
         return redirect(url_for("admin.admin_dashboard"))
 
     error = None
+
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "").strip()
-        if username == current_app.config.get("ADMIN_USERNAME") and password == current_app.config.get("ADMIN_PASSWORD"):
-            session["role"] = "admin"
-            flash("Logged in successfully.")
-            return redirect(url_for("admin.admin_dashboard"))
+
+
+        if USERS_FILE.exists():
+            with open(USERS_FILE, "r") as f:
+                users = json.load(f)
+        else:
+            users = {}
+
+        if username in users:
+            user = users[username]
+
+            if user.get("role") == "admin" and check_password_hash(user["password_hash"], password):
+                session["username"] = username
+                session["role"] = "admin"
+                flash("Logged in successfully.")
+                return redirect(url_for("admin.admin_dashboard"))
+
         error = "Invalid username or password."
 
     return render_template("admin_login.html", error=error)
 
 
-@admin_bp.route("/logout")
+@admin_bp.route("/logout", methods=["GET", "POST"])
 def admin_logout():
-    session.pop("role", None)
+    session.clear()
     flash("Logged out.")
-    return redirect(url_for("admin.admin_login"))
+    return redirect(url_for("index"))
 
 
-@admin_bp.route("/")
+@admin_bp.route("/", methods=["GET", "POST"])
 @admin_required
 def admin_dashboard():
     return render_template("admin_dashboard.html")
 
 
-@admin_bp.route("/highscores")
+@admin_bp.route("/highscores", methods=["GET", "POST"])
 @admin_required
 def admin_highscores():
     highscores = load_highscores()
@@ -146,14 +204,14 @@ def modify_highscore(entry_id):
     abort(400)
 
 
-@admin_bp.route("/users")
+@admin_bp.route("/users", methods=["GET"])
 @admin_required
 def admin_users():
     users = get_users()
     return render_template("admin_users.html", users=users)
 
 
-@admin_bp.route("/riddles")
+@admin_bp.route("/riddles", methods=["GET"])
 @admin_required
 def admin_riddles():
     riddles, answers = load_riddles_answers()
@@ -177,13 +235,13 @@ def modify_riddle(riddle_id):
         answers[riddle_id] = new_answer
         save_riddles_answers(riddles, answers)
         flash("Riddle updated successfully")
-        return redirect(url_for("admin.admin_riddles"))
+        return redirect(url_for(ADMIN_RIDDLES))
     elif action == "delete":
         riddles.pop(riddle_id)
         answers.pop(riddle_id)
         save_riddles_answers(riddles, answers)
         flash("Riddle deleted successfully")
-        return redirect(url_for("admin.admin_riddles"))
+        return redirect(url_for(ADMIN_RIDDLES))
     abort(400)
 
 

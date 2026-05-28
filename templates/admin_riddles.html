@@ -19,6 +19,7 @@
                     <td>{{ loop.index }}</td>
                     <td>
                         <form method="post" action="{{ url_for('admin.modify_riddle', riddle_id=loop.index0) }}" class="row g-2 align-items-center">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="col-12 col-md-5">
                                 <input type="text" name="riddle" value="{{ riddle }}" class="form-control" required>
                             </div>
@@ -45,6 +46,7 @@
         <div class="card-body">
             <h2>Add new riddle</h2>
             <form method="post" action="{{ url_for('admin.add_riddle') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label class="form-label">Riddle</label>
                     <input type="text" name="new_riddle" class="form-control" required>

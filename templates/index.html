@@ -35,6 +35,7 @@
                         <!-- Login Tab -->
                         <div class="tab-pane fade show active" id="login" role="tabpanel">
                             <form method="POST" class="mt-4">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="form-group">
                                     <label for="login-username">Username</label>
                                     <input type="text" class="form-control" id="login-username" 
@@ -58,6 +59,7 @@
                         <!-- Register Tab -->
                         <div class="tab-pane fade" id="register" role="tabpanel">
                             <form method="POST" class="mt-4">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="form-group">
                                     <label for="register-username">Username</label>
                                     <input type="text" class="form-control" id="register-username" 

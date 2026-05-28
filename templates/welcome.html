@@ -30,6 +30,7 @@
 
             <br>
             <form method="POST" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <p>Press the button below to start a new game.</p>
                 <button class="btn btn-dark hvr-round-corners">PLAY</button>
             </form>
@@ -37,6 +38,7 @@
             <br><br>
             
             <form method="POST" action="{{ url_for('logout') }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger hvr-round-corners">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>

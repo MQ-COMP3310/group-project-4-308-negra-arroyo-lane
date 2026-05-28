@@ -43,7 +43,6 @@ def login_required(view_func):
         return view_func(*args, **kwargs)
     return wrapper
 
-
 def admin_required(view_func):
     """
     Secure coding principle: role-based access control.
@@ -168,71 +167,68 @@ def view_scores(username):
     """
     username = validate_username(username)
 
-    if not current_user_owns(username):
+    if not current_user_owns(username) and session.get("role") != "admin":
         abort(403, description="Cannot view another user's scores")
 
     scores = read_score_history(username)
     return render_template("scores.html", username=username, scores=scores)
 
 
-@score_bp.route("/scores/<username>/<int:score_id>/edit", methods=["POST"])
+
+@score_bp.route("/admin/scores/<username>/<int:score_id>/edit", methods=["POST"])
 @login_required
-def user_cannot_edit_score(username, score_id):
+@admin_required
+def admin_edit_score(username, score_id):
     """
-    Requirement ACR-03: users must not be able to edit their scores.
-    Security principle: deny by default / fail securely.
-    
-    Even if this is an admin-only operation, normal users get 403 Forbidden.
-    The browser request is treated as untrusted (CSRF protection).
+    AC-06 / AC-07:
+    Only authenticated administrators may edit stored score history.
+    CSRF protection is enforced globally by Flask-WTF.
     """
-    audit_log(session.get("username"), "edit_score_attempt", score_id, "forbidden")
-    abort(403, description="Users cannot edit scores")
+    username = validate_username(username)
+    new_score = request.form.get("score", "").strip()
+
+    if not new_score.isdigit():
+        audit_log(session.get("username"), "admin_edit_score", score_id, "denied_invalid_score")
+        abort(400, description="Invalid score")
+
+    scores = read_score_history(username)
+
+    if score_id < 0 or score_id >= len(scores):
+        audit_log(session.get("username"), "admin_edit_score", score_id, "denied_not_found")
+        abort(404, description="Score not found")
+
+    scores[score_id]["score"] = int(new_score)
+    write_score_history(username, scores)
+
+    audit_log(session.get("username"), "admin_edit_score", score_id, "allowed")
+    return redirect(url_for("score_feature.view_scores", username=username))
 
 
-@score_bp.route("/scores/<username>/<int:score_id>/delete", methods=["POST"])
+@score_bp.route("/admin/scores/<username>/<int:score_id>/delete", methods=["POST"])
 @login_required
-def user_cannot_delete_score(username, score_id):
+@admin_required
+def admin_delete_score(username, score_id):
     """
-    Requirement ACR-03: users must not be able to delete their scores.
-    Security principle: deny by default / fail securely.
-    
-    Even if this is an admin-only operation, normal users get 403 Forbidden.
-    The browser request is treated as untrusted (CSRF protection).
+    AC-06 / AC-07:
+    Only authenticated administrators may delete stored score history.
+    Normal users receive 403 before modification occurs.
     """
-    audit_log(session.get("username"), "delete_score_attempt", score_id, "forbidden")
-    abort(403, description="Users cannot delete scores")
+    username = validate_username(username)
+    scores = read_score_history(username)
+
+    if score_id < 0 or score_id >= len(scores):
+        audit_log(session.get("username"), "admin_delete_score", score_id, "denied_not_found")
+        abort(404, description="Score not found")
+
+    scores.pop(score_id)
+
+    for index, score in enumerate(scores):
+        score["score_id"] = index
+
+    write_score_history(username, scores)
+
+    audit_log(session.get("username"), "admin_delete_score", score_id, "allowed")
+    return redirect(url_for("score_feature.view_scores", username=username))
 
 
-# ============================================================
-# Admin Routes - Future Enhancement
-# ============================================================
-# These routes are documented for admin score management but intentionally
-# not fully implemented to enforce ACR-03: users must never be allowed to
-# edit or delete scores, and current system does not require admin score editing.
-#
-# If admin modification becomes required in future, the following would be implemented:
-#
-# @score_bp.route("/admin/scores/<username>/<int:score_id>/edit", methods=["POST"])
-# @admin_required
-# def admin_edit_score(username, score_id):
-#     """
-#     ACR-04: Score modification routes check role == 'admin'.
-#     Only admins can modify scores through dedicated admin routes.
-#     """
-#     # Validate inputs
-#     # Verify score_id exists for username
-#     # Update score with new value
-#     # Log audit entry
-#     pass
-#
-# @score_bp.route("/admin/scores/<username>/<int:score_id>/delete", methods=["POST"])
-# @admin_required
-# def admin_delete_score(username, score_id):
-#     """
-#     ACR-04: Score deletion requires admin role.
-#     """
-#     # Validate inputs
-#     # Verify score_id exists for username
-#     # Delete score record
-#     # Log audit entry
-#     pass
+

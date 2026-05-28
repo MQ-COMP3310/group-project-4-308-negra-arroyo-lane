@@ -19,6 +19,7 @@
                     <td>{{ loop.index }}</td>
                     <td>
                         <form method="post" action="{{ url_for('admin.modify_highscore', entry_id=loop.index0) }}" class="row g-2 align-items-center">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="col-12 col-md-4">
                                 <input type="text" name="username" value="{{ entry.username }}" class="form-control" required>
                             </div>
