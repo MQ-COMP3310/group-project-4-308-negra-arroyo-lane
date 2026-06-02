@@ -270,7 +270,7 @@ def set_colour():
 # Feature 2 (Task 9.2) - Leaderboard / Highscore Search Function
 
 # Denylist of Illegal Username Searches
-CHECK_ILLEGAL_CHARS = re.compile(r'/";:\[]')
+CHECK_ILLEGAL_CHARS = re.compile(r'[<>"\';:/\[\]]')
 MAX_SEARCH_LENG = 30
 
 # Input sanitisation strips illegal characters, and checks max length
