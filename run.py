@@ -239,7 +239,7 @@ def highscores():
 
     return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
 
-@app.route('/<username>/history')
+@app.route('/<username>/history', methods = ["GET"])
 def history(username):
     
     results = show_results(username)

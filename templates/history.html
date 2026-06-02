@@ -20,6 +20,9 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <form method="get" action="{{ url_for('user', username=username) }}" class="mt-3">
+                    <button type="submit" class="btn btn-dark hvr-round-corners">Back</button>
+                </form>
             </table>
         </div>
     </div>

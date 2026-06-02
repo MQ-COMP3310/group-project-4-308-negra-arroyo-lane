@@ -14,8 +14,11 @@
             </ul>
             <br>
             <form method="POST">
-                <p>Press the button below the start a new game. {{ show_results }}</p>
+                <p>Press the play button below to start a new game.</p>
                 <button class="btn btn-dark hvr-round-corners">PLAY</button>
+            </form>
+            <form method="get" action="{{ url_for('history', username=username) }}" class="mt-3">
+                <button type="submit" class="btn btn-secondary">View Score History</button>
             </form>
         </div>
     </div>
