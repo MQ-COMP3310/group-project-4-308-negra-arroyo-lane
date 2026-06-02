@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from score_feature import score_bp, record_completed_score
+from score_feature import score_bp, record_completed_score, read_score_history
 from admin import admin_bp
 from flask_wtf.csrf import CSRFProtect
 
@@ -29,6 +29,15 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 data = []
+
+
+@app.after_request
+def set_cache_headers(response):
+    """Prevent browser from caching authenticated pages."""
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # Data directory for user management
 USERS_FILE = Path("data/users.json")
@@ -465,7 +474,7 @@ def highscores():
 
     return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
 
-@app.route('/history/share/<token>')
+@app.route('/history/share/<token>', methods=["GET"])
 def shared_history(token):
     username = verify_history_token(token)
 
@@ -474,40 +483,40 @@ def shared_history(token):
             "history.html",
             page_title="History",
             username=None,
+            results=[],
             shareable_link=None,
             error="Invalid or expired share link.",
-            results=[]
+            shared_view=True
         )
 
     return render_template(
         "history.html",
-        page_title="History",
+        page_title="Shared History",
         username=username,
+        results=read_score_history(username),
         shareable_link=request.url,
-        shared_view=True,
-        results=[]
+        error=None,
+        shared_view=True
     )
 
-@app.route('/<username>/history', methods=["GET", "POST"])
+@app.route('/<username>/history', methods=["GET"])
 @login_required
 @owner_or_admin
 def history(username):
     shareable_link = None
 
-    if request.method == "POST":
-        # Handle form submission for generating shareable link
+    if request.args.get("share") == "1":
         token = generate_history_token(username)
-        shareable_link = url_for('shared_history', token=token, _external=True)
-    elif request.args.get("share") == "1":
-        token = generate_history_token(username)
-        shareable_link = url_for('shared_history', token=token, _external=True)
+        shareable_link = url_for("shared_history", token=token, _external=True)
 
     return render_template(
         "history.html",
         page_title="History",
         username=username,
+        results=read_score_history(username),
         shareable_link=shareable_link,
-        error=None
+        error=None,
+        shared_view=False
     )
 
 if __name__ == '__main__':
