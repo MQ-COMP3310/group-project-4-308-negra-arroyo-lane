@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
 
   <!-- Hover.CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hover.css/2.3.1/css/hover-min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hover.css/2.3.1/css/hover-min.css" integrity="sha512-uc2hPIzorvbJG6r8Z5KS3OZZmLaXdlVMyXDUKn5dVhqaI1Sg+/3cLfIHpEsRXbAEZeXWvBGCvI+A+mSTg4lfA==" crossorigin="anonymous" />
   
   <!-- Custom styles -->
   <link href="{{ url_for('static', filename='custom/css/styles.css') }}" rel="stylesheet">
@@ -51,6 +51,18 @@
       </div>
     </div>
   </nav>
+
+  <div class="container" style="margin-top: 80px;">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-info mt-3">
+          {% for message in messages %}
+            <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
 
   <!-- Page Content -->
   {% block content %} {% endblock %}

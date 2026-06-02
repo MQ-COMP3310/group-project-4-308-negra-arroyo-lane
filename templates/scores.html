@@ -1,0 +1,43 @@
+<thead class="table-dark">
+  <tr>
+    <th scope="col">#</th>
+    <th scope="col">Score</th>
+    <th scope="col">Status</th>
+    {% if session.get("role") == "admin" %}
+      <th scope="col">Actions</th>
+    {% endif %}
+  </tr>
+</thead>
+
+<tbody>
+  {% for score in scores %}
+    <tr>
+      <td><strong>{{ score.score_id + 1 }}</strong></td>
+
+      <td><strong>{{ score.score }} points</strong></td>
+
+      <td>
+        <span class="badge badge-success">Recorded</span>
+      </td>
+
+      {% if session.get("role") == "admin" %}
+        <td>
+          <form method="POST"
+                action="{{ url_for('score_feature.admin_edit_score', username=username, score_id=score.score_id) }}"
+                style="display: inline-block;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="number" name="score" min="0" required style="width: 90px;">
+            <button type="submit" class="btn btn-sm btn-warning">Edit</button>
+          </form>
+
+          <form method="POST"
+                action="{{ url_for('score_feature.admin_delete_score', username=username, score_id=score.score_id) }}"
+                style="display: inline-block; margin-left: 5px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+</tbody>
