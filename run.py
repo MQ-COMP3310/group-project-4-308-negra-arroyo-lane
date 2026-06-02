@@ -25,7 +25,6 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
 csrf = CSRFProtect(app)
 app.register_blueprint(score_bp)
 app.register_blueprint(admin_bp)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -252,18 +251,6 @@ def get_scores():
     usernames_and_scores = sorted(zip(usernames, scores), key=lambda x: x[1], reverse=True)
     return usernames_and_scores
 
-def save_results(username, result):
-    with open("data/user-" + username + "-results.txt", "a") as file:
-        file.writelines(str(result) + "\n")
-
-def show_results(username):
-    results = []
-    with open("data/user-" + username + "-results.txt", "r") as file:
-        lines = file.read().splitlines()
-    for line in lines:
-        results.append(line)
-    return results
-
 
 def get_history_serializer():
     return URLSafeTimedSerializer(app.secret_key, salt="history-share")
@@ -273,11 +260,14 @@ def generate_history_token(username):
     return get_history_serializer().dumps({'username': username})
 
 
-def verify_history_token(token, max_age=30 * 24 * 60 * 60):
+def verify_history_token(token, max_age=3600):
     try:
-        data = get_history_serializer().loads(token, max_age=max_age)
-        return data.get('username')
-    except (BadSignature, SignatureExpired):
+        return get_history_serializer().loads(
+            token,
+            salt="history-share",
+            max_age=max_age
+        )
+    except (BadSignature):
         return None
 
 
@@ -389,8 +379,7 @@ def user(username):
     if request.method == "POST":
         return redirect(url_for('game', username=username))
 
-    return render_template("welcome.html",
-                            username=username, show_results=show_results(username))
+    return render_template("welcome.html", username=username)
 
 
 # GAME PAGE
@@ -421,7 +410,6 @@ def game(username):
                 # If right answer on LAST riddle: add score, submit score to highscore file and redirect to congrats page
                 write_to_file(USER_DATA_PREFIX + username + USER_SCORE_SUFFIX, str(add_to_score(username)) + "\n")
                 final_score(username)
-                save_results(username, end_score(username))
                 return redirect(url_for('congrats', username=username, score=end_score(username)))
         else:
             # Incorrect answer
@@ -480,30 +468,53 @@ def highscores():
 @app.route('/history/share/<token>')
 def shared_history(token):
     username = verify_history_token(token)
+
     if not username:
-        return render_template("history.html", page_title="History", username=None, results=[], shareable_link=None, error="Invalid or expired share link.")
+        return render_template(
+            "history.html",
+            page_title="History",
+            username=None,
+            shareable_link=None,
+            error="Invalid or expired share link.",
+            results=[]
+        )
 
-    results = show_results(username)
-    return render_template("history.html", page_title="History", username=username, results=results, shareable_link=request.url, shared_view=True)
-
+    return render_template(
+        "history.html",
+        page_title="History",
+        username=username,
+        shareable_link=request.url,
+        shared_view=True,
+        results=[]
+    )
 
 @app.route('/<username>/history', methods=["GET", "POST"])
+@login_required
+@owner_or_admin
 def history(username):
     shareable_link = None
+
     if request.method == "POST":
+        # Handle form submission for generating shareable link
+        token = generate_history_token(username)
+        shareable_link = url_for('shared_history', token=token, _external=True)
+    elif request.args.get("share") == "1":
         token = generate_history_token(username)
         shareable_link = url_for('shared_history', token=token, _external=True)
 
-    results = show_results(username)
-
-    return render_template("history.html", page_title="History", username=username, results=results, shareable_link=shareable_link, error=None)
-
+    return render_template(
+        "history.html",
+        page_title="History",
+        username=username,
+        shareable_link=shareable_link,
+        error=None
+    )
 
 if __name__ == '__main__':
     ip = "127.0.0.1"
     port = 8000
     app.run(host=ip,
             port=port,
-            debug=True)
+            debug=False)
     
 

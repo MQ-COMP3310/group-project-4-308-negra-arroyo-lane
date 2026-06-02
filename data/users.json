@@ -8,5 +8,10 @@
     "password_hash": "pbkdf2:sha256:600000$zaAy3x02IZ24QZgr$8bb1f65947f41ece1023ffc98649c25313b741415d0ae0e4a7ca2772403e3a4f",
     "role": "user",
     "created_at": "2026-05-28T00:05:17.611413"
+  },
+  "bingo": {
+    "password_hash": "pbkdf2:sha256:260000$tcgTN2YeH60hPu0E$d38e6431fc67ba4803317bb746aa5ab6d60dd32dd85a378b99faa1d8e68348db",
+    "role": "user",
+    "created_at": "2026-06-02T22:26:53.016724"
   }
 }

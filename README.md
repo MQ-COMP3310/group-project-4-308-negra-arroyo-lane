@@ -37,6 +37,7 @@ Create and activate a virtual environment:
 python -m venv env        # use `python3 -m venv env` on Linux/macOS
 source env/bin/activate   # use `env\Scripts\activate` on Windows
 pip install -r requirements.txt
+pip install 
 ```
 
 ## Run the Website
