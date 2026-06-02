@@ -16,7 +16,6 @@ AC-A06: Admin state-changing actions are CSRF protected.
 import json
 import pytest
 
-
 @pytest.fixture
 def admin_session(client):
     """
