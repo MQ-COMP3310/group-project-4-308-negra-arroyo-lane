@@ -2,6 +2,7 @@ import os
 import sys
 from importlib import reload
 from flask import Flask, render_template, redirect, request, url_for
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 # Needed for encoding to utf8
 reload(sys)
@@ -117,6 +118,22 @@ def show_results(username):
     for line in lines:
         results.append(line)
     return results
+
+
+def get_history_serializer():
+    return URLSafeTimedSerializer(app.secret_key, salt="history-share")
+
+
+def generate_history_token(username):
+    return get_history_serializer().dumps({'username': username})
+
+
+def verify_history_token(token, max_age=30 * 24 * 60 * 60):
+    try:
+        data = get_history_serializer().loads(token, max_age=max_age)
+        return data.get('username')
+    except (BadSignature, SignatureExpired):
+        return None
 
 
 # HOMEPAGE
@@ -239,12 +256,26 @@ def highscores():
 
     return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
 
-@app.route('/<username>/history', methods = ["GET"])
+@app.route('/history/share/<token>')
+def shared_history(token):
+    username = verify_history_token(token)
+    if not username:
+        return render_template("history.html", page_title="History", username=None, results=[], shareable_link=None, error="Invalid or expired share link.")
+
+    results = show_results(username)
+    return render_template("history.html", page_title="History", username=username, results=results, shareable_link=request.url, shared_view=True)
+
+
+@app.route('/<username>/history', methods=["GET", "POST"])
 def history(username):
-    
+    shareable_link = None
+    if request.method == "POST":
+        token = generate_history_token(username)
+        shareable_link = url_for('shared_history', token=token, _external=True)
+
     results = show_results(username)
 
-    return render_template("history.html", page_title="History", username=username, results=results)
+    return render_template("history.html", page_title="History", username=username, results=results, shareable_link=shareable_link, error=None)
 
 
 if __name__ == '__main__':
