@@ -266,17 +266,25 @@ def get_history_serializer():
 
 
 def generate_history_token(username):
-    return get_history_serializer().dumps({'username': username})
-
+    return get_history_serializer().dumps(
+        {"username": username},
+        salt="history-share"
+    )
 
 def verify_history_token(token, max_age=3600):
     try:
-        return get_history_serializer().loads(
+        data = get_history_serializer().loads(
             token,
             salt="history-share",
             max_age=max_age
         )
-    except (BadSignature):
+        username = data.get("username")
+        if not validate_username_format(username):
+            return None
+
+        return username
+
+    except (BadSignature, SignatureExpired, AttributeError):
         return None
 
 
