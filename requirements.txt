@@ -1,3 +1,8 @@
 Flask==2.0.3
 gunicorn==19.9.0
 Werkzeug==2.2.2
+Flask-WTF==1.0.1
+pytest==7.2.0
+flask_wtf==1.0.1
+
+# pip install Flask-WTF pytest
