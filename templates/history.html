@@ -1,0 +1,52 @@
+{% extends 'base.html' %} {% block content %}
+<div class="container base-content">
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>History</h1>
+                <!-- Jinja for loop to iterate through the list -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in results[::-1] %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if error %}
+            <div class="alert alert-danger mt-3" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+            {% if shareable_link %}
+            <div class="mt-3">
+                <label for="shareLink" class="form-label">Shareable history link</label>
+                <input id="shareLink" class="form-control" type="text" readonly value="{{ shareable_link }}">
+            </div>
+            {% endif %}
+            <div class="mt-3 d-flex justify-content-center gap-2">
+                {% if username %}
+                <form method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary hvr-round-corners">Generate Shareable Link</button>
+                </form>
+                <form method="get" action="{{ url_for('user', username=username) }}" class="d-inline">
+                    <button type="submit" class="btn btn-dark hvr-round-corners">Back</button>
+                </form>
+                {% else %}
+                <form method="get" action="{{ url_for('index') }}" class="d-inline">
+                    <button type="submit" class="btn btn-dark hvr-round-corners">Back</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
