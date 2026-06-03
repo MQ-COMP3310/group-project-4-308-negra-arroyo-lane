@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 100px;">
+    <h1>Manage Highscores</h1>
+    <p class="lead">Update or delete saved scores.</p>
+
+    <div class="table-responsive">
+        <table class="table table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Entry</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in highscores %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.modify_highscore', entry_id=loop.index0) }}" class="row g-2 align-items-center">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="col-12 col-md-4">
+                                <input type="text" name="username" value="{{ entry.username }}" class="form-control" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <input type="text" name="score" value="{{ entry.score }}" class="form-control" required>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <button type="submit" name="action" value="edit" class="btn btn-sm btn-primary">Save</button>
+                                <button type="submit" name="action" value="delete" class="btn btn-sm btn-danger">Delete</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2">No highscores found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
