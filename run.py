@@ -521,6 +521,7 @@ def inject_bg_colour():
 def set_colour():
     session['bg_colour'] = sanitise_colour(request.form.get('bg_colour', DEFAULT_COLOUR))
     return redirect(request.referrer or url_for('index'))
+csrf.exempt(set_colour)
 
 @app.route('/history/share/<token>', methods=["GET"])
 def shared_history(token):
