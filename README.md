@@ -1,10 +1,7 @@
 # Simple Flask Riddle Game — COMP3310 Secure Implementation
 
-**Group:** blah blah negra arroya lane
+**Group:** 308-negra-arroyo-lane
 **Repository:** `group-project-4-308-negra-arroyo-lane`
-**Submission snapshot tag:** `<add-your-final-tag-here>`
-
-> Replace the snapshot tag above with the Git tag you created for the final submission, and add the repository URL so it matches the link on the report title page.
 
 ---
 
