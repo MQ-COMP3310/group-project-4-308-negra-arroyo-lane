@@ -1,9 +1,10 @@
 #run.py
 import os
 import sys
-import json
+import re
 from importlib import reload
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, session
+import json
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from functools import wraps
 from flask import session, abort
@@ -480,7 +481,47 @@ def highscores():
 
     usernames_and_scores = get_scores()
 
-    return render_template("highscores.html", page_title="Highscores", usernames_and_scores=usernames_and_scores)
+# __ FEATURE 2 | TASK 9 EDITS __
+    search = request.args.get('search', '')
+    search_term = sanitise_search(search)
+
+# If search term exists, show entries containing search term. Compare both in lowercase
+    if search_term:
+        usernames_and_scores = [
+            entry for entry in usernames_and_scores
+            if search_term.lower() in entry[0].lower()
+        ]
+
+    return render_template("highscores.html", page_title="Highscores", 
+                           usernames_and_scores=usernames_and_scores,
+                            # Adds search term to possible returns
+                             search_term=search_term)
+# __ END FEATURE 2 EDITS __
+
+
+# Feature 1 (Task 9.1) - Background Colour Customisation
+
+# Input Sanitisation : Allowlist per security principles
+HEX_COLOUR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{3}$')
+DEFAULT_COLOUR = '#ffffff'
+
+# Input Sanitisation : Ensures user-input complies with maximum length of 7, and contains no illegal characters, else it returns defined default colour
+def sanitise_colour(value):
+    if value and len(value)<= 7 and HEX_COLOUR_RE.match(value): 
+        return value
+    return DEFAULT_COLOUR
+
+# Injects validated colour input to pages automatically
+@app.context_processor
+def inject_bg_colour():
+    return {'bg_colour': sanitise_colour(session.get('bg_colour', DEFAULT_COLOUR))}
+
+# Principle Least Privilege : Accepts colour submission, validates and stores, ensuring persistency during session. Only a validated value is ever stored
+@app.route('/settings/set_colour', methods =["POST"])
+def set_colour():
+    session['bg_colour'] = sanitise_colour(request.form.get('bg_colour', DEFAULT_COLOUR))
+    return redirect(request.referrer or url_for('index'))
+csrf.exempt(set_colour)
 
 @app.route('/history/share/<token>', methods=["GET"])
 def shared_history(token):
@@ -526,6 +567,25 @@ def history(username):
         error=None,
         shared_view=False
     )
+
+
+# Feature 2 (Task 9.2) - Leaderboard / Highscore Search Function
+
+# Denylist of Illegal Username Searches
+CHECK_ILLEGAL_CHARS = re.compile(r'[<>"\';:/\[\]]')
+MAX_SEARCH_LENG = 30
+
+# Input sanitisation strips illegal characters, and checks max length
+def sanitise_search(value):
+    if not value or not value.strip():
+        return ''
+    if len(value) > MAX_SEARCH_LENG:
+        return ''
+    if CHECK_ILLEGAL_CHARS.search(value):
+        return ''
+    return value.strip()
+
+
 
 if __name__ == '__main__':
     ip = "127.0.0.1"
