@@ -218,12 +218,10 @@ pytest tests/tests2.py -v                       # Feature 2: leaderboard search
 
 ```ini
 [pytest]
-python_files = test_*.py *_test.py AdminFeatureTest.py tests1.py tests2.py
+python_files = test_*.py *_test.py AdminFeatureTest.py tests1.py tests2.py test_score_integrity.py
 testpaths = tests
 ```
-
 Then simply run:
-
 ```bash
 pytest -v
 ```
